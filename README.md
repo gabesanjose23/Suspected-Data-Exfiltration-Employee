@@ -51,51 +51,32 @@ DeviceProcessEvents
 
 ---
 
-### 3. Check out the log event for the port scan 
-
-I pivoted to the DeviceProccessEvent table to see if we could see anything that was suspicious around the time the port scan started.We noticed a PowerShell script named portscan.ps1  launching at:2025-03-11T04:37:00.5366227Z
-
-**Query used to locate events:**
-
-```kql
-let VMName = "windows-target-1";
-let specificTime = datetime(2025-03-11T04:43:48.5646128Z);
-DeviceProcessEvents
-| where Timestamp between ((specificTime - 10m) .. (specificTime + 10m))
-| where DeviceName == VMName
-| order by Timestamp desc
-| project Timestamp, FileName, InitiatingProcessCommandLine
-```
-<img width="1212" alt="image" src="Screenshot 2025-03-11 140134.png">
-
----
-
-### 4. Investigate the suspect
-
-I logged into the suspect computer and observed the powershell script that was used to conduct port scan.
-
-
-<img width="1212" alt="image" src="Screenshot 2025-03-11 140911.png">
+### Step 3 
+I searched around the same time period for any evidence of exfiltration form the network but I didn’t see any logs indicating as such
 
 ---
 
 ## Summary
 
 
-TA0043: Reconnaissance & T1046: Network Service Scanning
+T1560: Archive Collected Data
 
-TA0002: Execution & T1059: Command and Scripting Interpreter
+T1059: Command and Scripting Interpreter
 
-TA0004: Privilege Escalation & T1078: Valid Accounts
+T1027: Obfuscated Files or Information
 
-TA0007: Discovery & T1049: System Network Connections Discovery
+T1047: Windows Management Instrumentation
 
-TA0008: Lateral Movement & T1021: Remote Services
+T1070: Indicator Removal on Host
+
+T1105: Ingress Tool Transfer
+
+T1055: Process Injection
 
 ---
 
 ## Response Action
-We observed the port scan script was launched by the SYSTEM account,this is not expected behavior and is not something that was setup by the admins,so I isolated the device and ran a malware scan.The malware scan produced no result , so out of cation,we kept the device isolated and put in a ticket to have it re-imagine/rebuild.
+I relayed the information to the employees manager, including everything with the archive being created  at regular intervals via powershell script. There didn’t appear to be any evidence of exfiltration.Standing by for further instruction from management.
 
 
 ---
