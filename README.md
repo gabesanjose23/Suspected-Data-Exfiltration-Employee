@@ -17,36 +17,37 @@ John is an administrator on his device and is not limited on which applications 
 
 ## Steps Taken
 
-### 1. Inspecting the logs for excessive successful/failed connections from any devices.  
+###  Step 1
 
-"windows-target-1" was found failing several connection requests against itself and another host on the same network:
+I did a search within MDE DeviceFileEvents for any activities with zip files, and found a lot of regular activity of archiving stuff and moving to a “backup” folder
 
 **Query used to locate events:**
 
 ```kql
-DeviceNetworkEvents
-| where ActionType == "ConnectionFailed"
-| summarize ConnectionCount = count()by DeviceName, ActionType, LocalIP
-| order by ConnectionCount
+DeviceFileEvents
+| where DeviceName == "windows-target-1" 
+| where FileName endswith "zip"
+| order by Timestamp desc 
 ```
-<img width="1212" alt="image" src="Screenshot 2025-03-11 140302.png">
+<img width="1212" alt="image" src="Screenshot 2025-03-12 125459.png">
 
 ---
 
-### 2. Investigate the failed connection logs
+### Step 2
 
-After observing failed connection request from a suspected host (10.0.0.5) in chronological order, I noticed a port scan was taking place due to the sequential order of the port.There were several port scans being conducted.
+I took one of the instances of a zip file being created, took the timestamp and searched under DeviceProcessEvents for anything happening 2 minutes before the archive was created and 2 minutes after.I discovered around the same time, a powershell script silently installed 7zip, and then used 7zip to zip up employee data into an archive. 
 
 **Query used to locate event:**
 
 ```kql
-let IPInQuestion = "10.0.0.5";
-DeviceNetworkEvents
-| where ActionType == "ConnectionFailed"
-| where LocalIP == IPInQuestion
+let VMName = "windows-target-1";
+let specificTime = datetime(2025-03-12T00:50:00.4847981Z);
+DeviceProcessEvents
+| where Timestamp between ((specificTime - 2m) .. (specificTime + 2m))
+| where DeviceName == VMName
 | order by Timestamp desc
 ```
-<img width="1212" alt="image" src="Screenshot 2025-03-11 140218.png">
+<img width="1212" alt="image" src="Screenshot 2025-03-12 130920.png">
 
 ---
 
